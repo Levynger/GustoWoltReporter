@@ -28,11 +28,13 @@ function initDatabase() {
       CREATE TABLE IF NOT EXISTS incidents (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         wolt_id TEXT NOT NULL,
+        wolt_delivery_id TEXT NOT NULL,
         category TEXT NOT NULL,
         description TEXT,
         screenshot_path TEXT,
         report_date TEXT NOT NULL,
         worker_name TEXT NOT NULL,
+        amount REAL,
         status TEXT DEFAULT 'pending',
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -46,7 +48,46 @@ function initDatabase() {
         return;
       }
       console.log('Database table initialized');
-      resolve(db);
+      
+      // Check for missing columns and add them (migration)
+      db.all("PRAGMA table_info(incidents)", (pragmaErr, columns) => {
+        if (pragmaErr) {
+          console.error('Error checking table info:', pragmaErr);
+          resolve(db);
+          return;
+        }
+        
+        const columnNames = columns.map(col => col.name);
+        const migrations = [];
+        
+        if (!columnNames.includes('wolt_delivery_id')) {
+          migrations.push({ name: 'wolt_delivery_id', type: 'TEXT' });
+        }
+        
+        if (!columnNames.includes('amount')) {
+          migrations.push({ name: 'amount', type: 'REAL' });
+        }
+        
+        if (migrations.length === 0) {
+          resolve(db);
+          return;
+        }
+        
+        let completed = 0;
+        migrations.forEach(migration => {
+          db.run(`ALTER TABLE incidents ADD COLUMN ${migration.name} ${migration.type}`, (alterErr) => {
+            if (alterErr) {
+              console.error(`Error adding ${migration.name} column:`, alterErr);
+            } else {
+              console.log(`Added ${migration.name} column to existing table`);
+            }
+            completed++;
+            if (completed === migrations.length) {
+              resolve(db);
+            }
+          });
+        });
+      });
     });
   });
 }

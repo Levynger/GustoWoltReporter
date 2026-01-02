@@ -1,23 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Wolt Incident Reporter</title>
+    <title>התחברות - דיווח תקלות Wolt</title>
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
     <div class="container">
         <div class="login-box">
-            <h1>Wolt Incident Reporter</h1>
-            <h2>Login</h2>
+            <h1>דיווח תקלות Wolt</h1>
+            <h2>התחברות</h2>
             <form id="loginForm">
                 <div class="form-group">
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" required>
+                    <label for="password">סיסמה:</label>
+                    <input type="password" id="password" name="password" required dir="ltr">
                 </div>
                 <div id="errorMessage" class="error-message" style="display: none;"></div>
-                <button type="submit" class="btn btn-primary">Login</button>
+                <button type="submit" class="btn btn-primary">התחבר</button>
             </form>
         </div>
     </div>
@@ -45,15 +45,14 @@
                 if (data.success) {
                     window.location.href = `/${loginType}`;
                 } else {
-                    errorDiv.textContent = data.message || 'Invalid password';
+                    errorDiv.textContent = data.message || 'סיסמה שגויה';
                     errorDiv.style.display = 'block';
                 }
             } catch (error) {
-                errorDiv.textContent = 'Error connecting to server';
+                errorDiv.textContent = 'שגיאה בחיבור לשרת';
                 errorDiv.style.display = 'block';
             }
         });
     </script>
 </body>
 </html>
-

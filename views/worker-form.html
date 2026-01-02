@@ -1,60 +1,84 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Report Incident - Wolt Incident Reporter</title>
+    <title>דיווח תקלה - דיווח תקלות Wolt</title>
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
     <div class="container">
-        <div class="form-box">
-            <h1>Report Wolt Incident</h1>
+        <!-- Success Screen -->
+        <div id="successScreen" class="form-box success-screen" style="display: none;">
+            <div class="success-icon">✓</div>
+            <h1>תודה רבה!</h1>
+            <h2>הדיווח נשלח בהצלחה</h2>
+            <p>הדיווח שלך התקבל ונשמר במערכת.</p>
+            <button type="button" class="btn btn-primary" onclick="showForm()">דיווח תקלה חדש</button>
+        </div>
+        
+        <!-- Form -->
+        <div id="formContainer" class="form-box">
+            <h1>דיווח תקלת Wolt</h1>
             <form id="incidentForm" enctype="multipart/form-data">
                 <div class="form-group">
-                    <label for="wolt_id">Wolt ID *</label>
-                    <input type="text" id="wolt_id" name="wolt_id" required>
+                    <label for="wolt_id">מספר הזמנה Wolt *</label>
+                    <input type="text" id="wolt_id" name="wolt_id" required dir="ltr">
                 </div>
                 
                 <div class="form-group">
-                    <label for="category">Category *</label>
+                    <label for="wolt_delivery_id">מספר משלוח Wolt *</label>
+                    <input type="text" id="wolt_delivery_id" name="wolt_delivery_id" required dir="ltr">
+                </div>
+                
+                <div class="form-group">
+                    <label for="category">סוג תקלה *</label>
                     <select id="category" name="category" required>
-                        <option value="">בחר סיבה...</option>
-                        <option value="remake_approved">>הכנה מחדש</option>
-                        <option value="refund_promised">>אושר זיכוי</option>
+                        <option value="">בחר סוג תקלה...</option>
+                        <option value="remake_approved">חיוב המסעדה</option>
+                        <option value="refund_promised">זיכוי המסעדה</option>
                         <option value="other">אחר, נא לפרט</option>
                     </select>
                 </div>
                 
-                <div class="form-group">
-                    <label for="description">Description</label>
-                    <textarea id="description" name="description" rows="4" placeholder="Brief description of the incident..."></textarea>
+                <div class="form-group" id="amountGroup" style="display: none;">
+                    <label for="amount">סכום (ש"ח) *</label>
+                    <input type="number" id="amount" name="amount" step="0.01" min="0" dir="ltr" placeholder="0.00">
                 </div>
                 
                 <div class="form-group">
-                    <label for="screenshot">Screenshot (optional)</label>
+                    <label for="description">תיאור</label>
+                    <textarea id="description" name="description" rows="4" placeholder="תיאור קצר של התקלה..." dir="rtl"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="screenshot">צילום מסך (אופציונלי)</label>
                     <input type="file" id="screenshot" name="screenshot" accept="image/*" capture="environment">
-                    <small>Take a photo or upload a screenshot of the Wolt chat</small>
+                    <small>צלם תמונה או העלה צילום מסך מהצ'אט עם Wolt</small>
                 </div>
                 
                 <div class="form-group">
-                    <label for="report_date">Date of Report *</label>
-                    <input type="date" id="report_date" name="report_date" required>
+                    <label for="report_date">תאריך הדיווח *</label>
+                    <input type="date" id="report_date" name="report_date" required dir="ltr">
                 </div>
                 
                 <div class="form-group">
-                    <label for="worker_name">Your Name *</label>
-                    <input type="text" id="worker_name" name="worker_name" required>
+                    <label for="report_time">שעה *</label>
+                    <input type="time" id="report_time" name="report_time" required dir="ltr">
+                </div>
+                
+                <div class="form-group">
+                    <label for="worker_name">שם העובד *</label>
+                    <input type="text" id="worker_name" name="worker_name" required dir="rtl">
                 </div>
                 
                 <div id="message" class="message" style="display: none;"></div>
                 
-                <button type="submit" class="btn btn-primary">Submit Report</button>
-                <button type="button" class="btn btn-secondary" onclick="window.location.href='/worker'">Clear Form</button>
+                <button type="submit" class="btn btn-primary">שלח דיווח</button>
+                <button type="button" class="btn btn-secondary" onclick="resetForm()">נקה טופס</button>
             </form>
         </div>
     </div>
     <script src="/js/worker.js"></script>
 </body>
 </html>
-

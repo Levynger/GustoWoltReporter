@@ -2,19 +2,19 @@
 
 // Category labels mapping
 const categoryLabels = {
-    'late_delivery': 'Late Delivery',
-    'missing_items': 'Missing Items',
-    'remake_approved': 'Remake Approved',
-    'refund_promised': 'Refund Promised',
-    'other': 'Other'
+    'late_delivery': 'משלוח מאוחר',
+    'missing_items': 'פריטים חסרים',
+    'remake_approved': 'חיוב המסעדה',
+    'refund_promised': 'זיכוי המסעדה',
+    'other': 'אחר, נא לפרט'
 };
 
 // Status labels mapping
 const statusLabels = {
-    'pending': 'Pending',
-    'resolved': 'Resolved',
-    'dealt_with': 'Dealt With',
-    'escalation': 'Escalation'
+    'pending': 'ממתין לטיפול',
+    'resolved': 'טופל',
+    'dealt_with': 'טופל', // Legacy support
+    'escalation': 'הועבר להמשך טיפול' // Legacy support - display only
 };
 
 // Load incidents on page load
@@ -26,6 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('dateTo').value = dateTo.toISOString().split('T')[0];
     document.getElementById('dateFrom').value = dateFrom.toISOString().split('T')[0];
+    
+    // Set default status filter to show only non-resolved (pending) incidents
+    document.getElementById('statusFilter').value = 'pending';
     
     loadIncidents();
 });
@@ -41,6 +44,7 @@ async function loadIncidents() {
     const incidentsList = document.getElementById('incidentsList');
     
     loadingDiv.style.display = 'block';
+    loadingDiv.textContent = 'טוען...';
     incidentsList.innerHTML = '';
     
     try {
@@ -61,7 +65,7 @@ async function loadIncidents() {
         loadingDiv.style.display = 'none';
         
         if (incidents.length === 0) {
-            incidentsList.innerHTML = '<div class="incident-card"><p style="text-align: center; color: #666;">No incidents found for the selected filters.</p></div>';
+            incidentsList.innerHTML = '<div class="incident-card"><p style="text-align: center; color: #666;">לא נמצאו תקלות לפי הסינון שנבחר.</p></div>';
             return;
         }
         
@@ -72,7 +76,7 @@ async function loadIncidents() {
     } catch (error) {
         console.error('Error loading incidents:', error);
         loadingDiv.style.display = 'none';
-        incidentsList.innerHTML = '<div class="incident-card"><p style="text-align: center; color: #d32f2f;">Error loading incidents. Please try again.</p></div>';
+        incidentsList.innerHTML = '<div class="incident-card"><p style="text-align: center; color: #d32f2f;">שגיאה בטעינת התקלות. נסה שוב.</p></div>';
     }
 }
 
@@ -88,21 +92,24 @@ function createIncidentCard(incident) {
     
     card.innerHTML = `
         <div class="incident-header">
-            <div class="incident-id">Wolt ID: ${escapeHtml(incident.wolt_id)}</div>
+            <div class="incident-id">הזמנה: ${escapeHtml(incident.wolt_id)} | משלוח: ${escapeHtml(incident.wolt_delivery_id || 'לא צוין')}</div>
             <span class="incident-status ${statusClass}">${statusLabel}</span>
         </div>
         <div class="incident-info">
             <div class="incident-info-item">
-                <strong>Category:</strong> ${categoryLabel}
+                <strong>סוג תקלה:</strong> ${categoryLabel}
+            </div>
+            ${incident.amount ? `<div class="incident-info-item">
+                <strong>סכום:</strong> ${parseFloat(incident.amount).toFixed(2)} ש"ח
+            </div>` : ''}
+            <div class="incident-info-item">
+                <strong>תאריך דיווח:</strong> ${formatDate(incident.report_date)}
             </div>
             <div class="incident-info-item">
-                <strong>Report Date:</strong> ${formatDate(incident.report_date)}
+                <strong>עובד:</strong> ${escapeHtml(incident.worker_name)}
             </div>
             <div class="incident-info-item">
-                <strong>Worker:</strong> ${escapeHtml(incident.worker_name)}
-            </div>
-            <div class="incident-info-item">
-                <strong>Created:</strong> ${formatDate(incident.created_at)}
+                <strong>נוצר:</strong> ${formatDate(incident.created_at)}
             </div>
         </div>
         ${incident.description ? `<p style="color: #666; margin-top: 10px;">${escapeHtml(incident.description.substring(0, 100))}${incident.description.length > 100 ? '...' : ''}</p>` : ''}
@@ -117,11 +124,15 @@ function createIncidentCard(incident) {
 // Create status update buttons
 function createStatusButtons(incident) {
     const buttons = [];
-    const statuses = ['pending', 'resolved', 'dealt_with', 'escalation'];
+    const statuses = ['pending', 'resolved'];
+    const statusButtonLabels = {
+        'pending': 'סמן כממתין לטיפול',
+        'resolved': 'סמן כטופל'
+    };
     
     statuses.forEach(status => {
         if (incident.status !== status) {
-            buttons.push(`<button class="btn btn-small btn-secondary" onclick="event.stopPropagation(); updateStatus(${incident.id}, '${status}')">Mark as ${statusLabels[status]}</button>`);
+            buttons.push(`<button class="btn btn-small btn-secondary" onclick="event.stopPropagation(); updateStatus(${incident.id}, '${status}')">${statusButtonLabels[status]}</button>`);
         }
     });
     
@@ -147,7 +158,7 @@ async function updateStatus(id, status) {
         loadIncidents();
     } catch (error) {
         console.error('Error updating status:', error);
-        alert('Error updating status. Please try again.');
+        alert('שגיאה בעדכון הסטטוס. נסה שוב.');
     }
 }
 
@@ -168,50 +179,61 @@ async function showIncidentDetail(id) {
         const categoryLabel = categoryLabels[incident.category] || incident.category;
         
         modalBody.innerHTML = `
-            <h2>Incident Details</h2>
+            <h2>פרטי התקלה</h2>
             <div class="modal-detail">
-                <label>Wolt ID:</label>
+                <label>מספר הזמנה Wolt:</label>
                 <p>${escapeHtml(incident.wolt_id)}</p>
             </div>
             <div class="modal-detail">
-                <label>Category:</label>
-                <p>${categoryLabel}</p>
+                <label>מספר משלוח Wolt:</label>
+                <p>${escapeHtml(incident.wolt_delivery_id || 'לא צוין')}</p>
             </div>
             <div class="modal-detail">
-                <label>Status:</label>
+                <label>סוג תקלה:</label>
+                <p>${categoryLabel}</p>
+            </div>
+            ${incident.amount ? `<div class="modal-detail">
+                <label>סכום:</label>
+                <p>${parseFloat(incident.amount).toFixed(2)} ש"ח</p>
+            </div>` : ''}
+            <div class="modal-detail">
+                <label>סטטוס:</label>
                 <p>${statusLabel}</p>
             </div>
             <div class="modal-detail">
-                <label>Description:</label>
-                <p>${incident.description ? escapeHtml(incident.description) : 'No description provided'}</p>
+                <label>תיאור:</label>
+                <p>${incident.description ? escapeHtml(incident.description) : 'לא צוין תיאור'}</p>
             </div>
             <div class="modal-detail">
-                <label>Report Date:</label>
+                <label>תאריך דיווח:</label>
                 <p>${formatDate(incident.report_date)}</p>
             </div>
             <div class="modal-detail">
-                <label>Worker Name:</label>
+                <label>שם עובד:</label>
                 <p>${escapeHtml(incident.worker_name)}</p>
             </div>
             <div class="modal-detail">
-                <label>Created At:</label>
+                <label>נוצר ב:</label>
                 <p>${formatDate(incident.created_at)}</p>
             </div>
             ${incident.screenshot_path ? `
                 <div class="modal-detail">
-                    <label>Screenshot:</label>
-                    <img src="${incident.screenshot_path}" alt="Screenshot" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                    <p style="display: none; color: #d32f2f;">Image not found</p>
+                    <label>צילום מסך:</label>
+                    <img src="${incident.screenshot_path}" alt="צילום מסך" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <p style="display: none; color: #d32f2f;">תמונה לא נמצאה</p>
                 </div>
-            ` : '<div class="modal-detail"><label>Screenshot:</label><p>No screenshot uploaded</p></div>'}
+            ` : '<div class="modal-detail"><label>צילום מסך:</label><p>לא הועלה צילום מסך</p></div>'}
             <div class="modal-detail">
-                <label>Update Status:</label>
+                <label>עדכן סטטוס:</label>
                 <div style="margin-top: 10px;">
-                    ${['pending', 'resolved', 'dealt_with', 'escalation'].map(status => 
-                        incident.status !== status ? 
-                            `<button class="btn btn-small btn-secondary" onclick="updateStatus(${incident.id}, '${status}'); closeModal();">Mark as ${statusLabels[status]}</button>` : 
-                            ''
-                    ).join('')}
+                    ${['pending', 'resolved'].map(status => {
+                        if (incident.status === status) return '';
+                        const statusButtonLabels = {
+                            'pending': 'סמן כממתין לטיפול',
+                            'resolved': 'סמן כטופל'
+                        };
+                        return `<button class="btn btn-small btn-secondary" onclick="updateStatus(${incident.id}, '${status}'); closeModal();">${statusButtonLabels[status]}</button>`;
+                    }).join('')}
                 </div>
             </div>
         `;
@@ -219,7 +241,7 @@ async function showIncidentDetail(id) {
         modal.style.display = 'block';
     } catch (error) {
         console.error('Error loading incident detail:', error);
-        alert('Error loading incident details. Please try again.');
+        alert('שגיאה בטעינת פרטי התקלה. נסה שוב.');
     }
 }
 
@@ -255,9 +277,24 @@ async function logout() {
 
 // Helper functions
 function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (!dateString) return 'לא זמין';
+    
+    // Check if dateString contains time in format: YYYY-MM-DD HH:MM
+    const dateTimeMatch = dateString.match(/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})/);
+    if (dateTimeMatch) {
+        // Parse the date and time directly without timezone conversion
+        const [, datePart, timePart] = dateTimeMatch;
+        const [year, month, day] = datePart.split('-');
+        const [hours, minutes] = timePart.split(':');
+        
+        // Create date object in local timezone
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes));
+        return date.toLocaleDateString('he-IL') + ' ' + date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    } else {
+        // Fallback for ISO date strings or other formats
+        const date = new Date(dateString);
+        return date.toLocaleDateString('he-IL') + ' ' + date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    }
 }
 
 function escapeHtml(text) {
@@ -266,4 +303,3 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
-

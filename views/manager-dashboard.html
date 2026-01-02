@@ -1,52 +1,48 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manager Dashboard - Wolt Incident Reporter</title>
+    <title>לוח בקרה למנהל - דיווח תקלות Wolt</title>
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
     <div class="container">
         <div class="dashboard-header">
-            <h1>Manager Dashboard</h1>
-            <button class="btn btn-secondary" onclick="logout()">Logout</button>
+            <h1>לוח בקרה למנהל</h1>
+            <button class="btn btn-secondary" onclick="logout()">התנתק</button>
         </div>
         
         <div class="filters">
             <div class="filter-group">
-                <label for="dateFrom">From Date:</label>
-                <input type="date" id="dateFrom">
+                <label for="dateFrom">מתאריך:</label>
+                <input type="date" id="dateFrom" dir="ltr">
             </div>
             <div class="filter-group">
-                <label for="dateTo">To Date:</label>
-                <input type="date" id="dateTo">
+                <label for="dateTo">עד תאריך:</label>
+                <input type="date" id="dateTo" dir="ltr">
             </div>
             <div class="filter-group">
-                <label for="categoryFilter">Category:</label>
+                <label for="categoryFilter">סוג תקלה:</label>
                 <select id="categoryFilter">
-                    <option value="all">All Categories</option>
-                    <option value="late_delivery">Late Delivery</option>
-                    <option value="missing_items">Missing Items</option>
-                    <option value="remake_approved">Remake Approved</option>
-                    <option value="refund_promised">Refund Promised</option>
-                    <option value="other">Other</option>
+                    <option value="all">כל הסוגים</option>
+                    <option value="remake_approved">חיוב המסעדה</option>
+                    <option value="refund_promised">זיכוי המסעדה</option>
+                    <option value="other">אחר, נא לפרט</option>
                 </select>
             </div>
             <div class="filter-group">
-                <label for="statusFilter">Status:</label>
+                <label for="statusFilter">סטטוס:</label>
                 <select id="statusFilter">
-                    <option value="all">All Statuses</option>
-                    <option value="pending">Pending</option>
-                    <option value="resolved">Resolved</option>
-                    <option value="dealt_with">Dealt With</option>
-                    <option value="escalation">Escalation</option>
+                    <option value="all">כל הסטטוסים</option>
+                    <option value="pending" selected>ממתין לטיפול</option>
+                    <option value="resolved">טופל</option>
                 </select>
             </div>
-            <button class="btn btn-primary" onclick="loadIncidents()">Apply Filters</button>
+            <button class="btn btn-primary" onclick="loadIncidents()">החל סינון</button>
         </div>
         
-        <div id="loading" class="loading" style="display: none;">Loading...</div>
+        <div id="loading" class="loading" style="display: none;">טוען...</div>
         <div id="incidentsList" class="incidents-list"></div>
     </div>
     
@@ -61,4 +57,3 @@
     <script src="/js/manager.js"></script>
 </body>
 </html>
-

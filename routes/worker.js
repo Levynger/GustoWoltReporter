@@ -67,10 +67,10 @@ router.get('/', requireWorkerAuth, (req, res) => {
  */
 router.post('/submit', requireWorkerAuth, upload.single('screenshot'), async (req, res) => {
   try {
-    const { wolt_id, category, description, report_date, worker_name } = req.body;
+    const { wolt_id, wolt_delivery_id, category, description, report_date, worker_name, amount } = req.body;
     
     // Validation
-    if (!wolt_id || !category || !report_date || !worker_name) {
+    if (!wolt_id || !wolt_delivery_id || !category || !report_date || !worker_name) {
       // Clean up uploaded file if validation fails
       if (req.file) {
         fs.unlinkSync(req.file.path);
@@ -78,6 +78,18 @@ router.post('/submit', requireWorkerAuth, upload.single('screenshot'), async (re
       return res.status(400).json({ 
         success: false, 
         message: 'Missing required fields' 
+      });
+    }
+    
+    // Validate amount for specific categories
+    if ((category === 'remake_approved' || category === 'refund_promised') && (!amount || amount <= 0)) {
+      // Clean up uploaded file if validation fails
+      if (req.file) {
+        fs.unlinkSync(req.file.path);
+      }
+      return res.status(400).json({ 
+        success: false, 
+        message: 'סכום נדרש לסוג תקלה זה' 
       });
     }
     
@@ -93,11 +105,15 @@ router.post('/submit', requireWorkerAuth, upload.single('screenshot'), async (re
     // Create incident directly in database
     const db = getDatabase();
     const query = `
-      INSERT INTO incidents (wolt_id, category, description, screenshot_path, report_date, worker_name)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO incidents (wolt_id, wolt_delivery_id, category, description, screenshot_path, report_date, worker_name, amount)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
-    db.run(query, [wolt_id, category, description || null, screenshot_path || null, report_date, worker_name], function(err) {
+    const amountValue = (category === 'remake_approved' || category === 'refund_promised') ? parseFloat(amount) : null;
+    
+    console.log('Inserting incident:', { wolt_id, wolt_delivery_id, category, report_date, worker_name, amount: amountValue });
+    
+    db.run(query, [wolt_id, wolt_delivery_id, category, description || null, screenshot_path || null, report_date, worker_name, amountValue], function(err) {
       if (err) {
         console.error('Error creating incident:', err);
         // Clean up uploaded file if database insert fails
@@ -110,6 +126,7 @@ router.post('/submit', requireWorkerAuth, upload.single('screenshot'), async (re
         });
       }
       
+      console.log(`Incident created successfully with ID: ${this.lastID}`);
       res.json({ 
         success: true, 
         message: 'Incident reported successfully!' 

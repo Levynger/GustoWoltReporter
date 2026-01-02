@@ -16,12 +16,14 @@ router.get('/incidents', requireManagerAuth, (req, res) => {
   const params = [];
   
   if (dateFrom) {
-    query += ' AND report_date >= ?';
+    // report_date is stored as "YYYY-MM-DD HH:MM", so we compare the date part
+    query += ' AND SUBSTR(report_date, 1, 10) >= ?';
     params.push(dateFrom);
   }
   
   if (dateTo) {
-    query += ' AND report_date <= ?';
+    // For dateTo, compare the date part to include the entire day
+    query += ' AND SUBSTR(report_date, 1, 10) <= ?';
     params.push(dateTo);
   }
   
@@ -37,12 +39,16 @@ router.get('/incidents', requireManagerAuth, (req, res) => {
   
   query += ' ORDER BY created_at DESC';
   
+  console.log('Fetching incidents with query:', query);
+  console.log('Query params:', params);
+  
   db.all(query, params, (err, rows) => {
     if (err) {
       console.error('Error fetching incidents:', err);
       return res.status(500).json({ error: 'Failed to fetch incidents' });
     }
     
+    console.log(`Found ${rows.length} incidents`);
     res.json(rows);
   });
 });
@@ -74,19 +80,25 @@ router.get('/incidents/:id', requireManagerAuth, (req, res) => {
  * Create new incident (from worker form)
  */
 router.post('/incidents', (req, res) => {
-  const { wolt_id, category, description, report_date, worker_name, screenshot_path } = req.body;
+  const { wolt_id, wolt_delivery_id, category, description, report_date, worker_name, screenshot_path, amount } = req.body;
   
-  if (!wolt_id || !category || !report_date || !worker_name) {
+  if (!wolt_id || !wolt_delivery_id || !category || !report_date || !worker_name) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
   
+  // Validate amount for specific categories
+  if ((category === 'remake_approved' || category === 'refund_promised') && (!amount || amount <= 0)) {
+    return res.status(400).json({ error: 'Amount is required for this category' });
+  }
+  
   const db = getDatabase();
+  const amountValue = (category === 'remake_approved' || category === 'refund_promised') ? parseFloat(amount) : null;
   const query = `
-    INSERT INTO incidents (wolt_id, category, description, screenshot_path, report_date, worker_name)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO incidents (wolt_id, wolt_delivery_id, category, description, screenshot_path, report_date, worker_name, amount)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
   
-  db.run(query, [wolt_id, category, description || null, screenshot_path || null, report_date, worker_name], function(err) {
+  db.run(query, [wolt_id, wolt_delivery_id, category, description || null, screenshot_path || null, report_date, worker_name, amountValue], function(err) {
     if (err) {
       console.error('Error creating incident:', err);
       return res.status(500).json({ error: 'Failed to create incident' });
@@ -112,7 +124,7 @@ router.patch('/incidents/:id', requireManagerAuth, (req, res) => {
     return res.status(400).json({ error: 'Status is required' });
   }
   
-  const validStatuses = ['pending', 'resolved', 'dealt_with', 'escalation'];
+  const validStatuses = ['pending', 'resolved'];
   if (!validStatuses.includes(status)) {
     return res.status(400).json({ error: 'Invalid status' });
   }
