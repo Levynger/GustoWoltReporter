@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager Dashboard - Wolt Incident Reporter</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>Manager Dashboard</h1>
+            <button class="btn btn-secondary" onclick="logout()">Logout</button>
+        </div>
+        
+        <div class="filters">
+            <div class="filter-group">
+                <label for="dateFrom">From Date:</label>
+                <input type="date" id="dateFrom">
+            </div>
+            <div class="filter-group">
+                <label for="dateTo">To Date:</label>
+                <input type="date" id="dateTo">
+            </div>
+            <div class="filter-group">
+                <label for="categoryFilter">Category:</label>
+                <select id="categoryFilter">
+                    <option value="all">All Categories</option>
+                    <option value="late_delivery">Late Delivery</option>
+                    <option value="missing_items">Missing Items</option>
+                    <option value="remake_approved">Remake Approved</option>
+                    <option value="refund_promised">Refund Promised</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="statusFilter">Status:</label>
+                <select id="statusFilter">
+                    <option value="all">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="dealt_with">Dealt With</option>
+                    <option value="escalation">Escalation</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="loadIncidents()">Apply Filters</button>
+        </div>
+        
+        <div id="loading" class="loading" style="display: none;">Loading...</div>
+        <div id="incidentsList" class="incidents-list"></div>
+    </div>
+    
+    <!-- Detail Modal -->
+    <div id="detailModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+    
+    <script src="/js/manager.js"></script>
+</body>
+</html>
+
